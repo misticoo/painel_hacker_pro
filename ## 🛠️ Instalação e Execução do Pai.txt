@@ -1,0 +1,36 @@
+## 🛠️ Instalação e Execução do Painel Hacker Pro
+
+Siga os passos abaixo para preparar e executar corretamente o painel:
+
+### 📦 1. Instalação das Dependências
+
+Certifique-se de que as ferramentas essenciais estão instaladas no seu sistema. Recomendamos as seguintes:
+
+* `nmap`
+* `sqlmap`
+* `metasploit`
+* `curl`
+* `hydra`
+* `figlet`
+* `lolcat`
+
+Você pode instalá-las com o seguinte comando (para distribuições baseadas em Debian/Ubuntu):
+
+```bash
+sudo apt update && sudo apt install nmap sqlmap metasploit-framework curl hydra figlet lolcat -y
+```
+
+### 🔐 2. Permissão de Execução
+
+Conceda permissão para o script ser executado:
+
+```bash
+chmod +x painel_hacker_pro.sh
+```
+
+### 🚀 3. Executando o Painel
+
+Agora, basta iniciar o painel com o comando:
+
+```bash
+./painel_hacker_pro.sh
